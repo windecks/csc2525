@@ -11,7 +11,7 @@ void print_compressed(const std::vector<std::tuple<int, int, char>> &compressed)
 
 int main() {
     std::string INPUT = "HELLOHELLJELLO";
-    auto compressed = LZ77::compress(6, INPUT.c_str());
+    auto compressed = LZ77::compress(5, INPUT.c_str());
     print_compressed(compressed);
     return 0;
 }

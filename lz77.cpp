@@ -39,4 +39,5 @@ std::vector<std::tuple<int, int, char>> LZ77::compress(size_t window_size, const
         if (literal_char == '\0')
             break;
     }
+    return output;
 }
