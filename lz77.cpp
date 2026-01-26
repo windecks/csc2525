@@ -41,3 +41,19 @@ std::vector<std::tuple<int, int, char>> LZ77::compress(size_t window_size, const
     }
     return output;
 }
+
+std::string LZ77::decompress(std::vector<std::tuple<int, int, char>> compressed) {
+    std::string original = "";
+    for (auto &[d, l, c]: compressed) {
+        if (d > 0) {
+            size_t start_index = original.size() - d;
+            for (size_t i = 0; i < l; ++i) {
+                original += original[start_index + i];
+            }
+        }
+        if (c != '\0') {
+            original += c;
+        }
+    }
+    return original;
+}
