@@ -23,7 +23,7 @@ struct BitReader {
         refill_buffer();
     }
 
-    bool read_bits(uint32_t &out, int nbits) {
+    bool read_bits(uint32_t &out, const int& nbits) {
         if (nbits <= 0 || nbits > 32) {
             throw std::invalid_argument("nbits must be between 1 and 32");
         }

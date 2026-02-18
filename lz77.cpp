@@ -2,7 +2,6 @@
 
 #include <cstring>
 #include <fstream>
-#include <stdint.h>
 #include <utility>
 #include <vector>
 #include "bit_reader.h"

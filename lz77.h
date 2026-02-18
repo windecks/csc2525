@@ -1,7 +1,7 @@
+#pragma once
+
 #include <cstddef>
 #include <string>
-
-#pragma once
 
 static class LZ77 {
 public:
@@ -10,4 +10,3 @@ public:
     static void decompress(size_t search_buffer_size, size_t lookahead_buffer_size, std::ifstream &infile,
                            std::ofstream &outfile);
 } LZ77;
-
