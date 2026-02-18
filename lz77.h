@@ -1,14 +1,13 @@
 #include <cstddef>
-#include <vector>
 #include <string>
 
-#ifndef CSC2525_LZ77_H
-#define CSC2525_LZ77_H
+#pragma once
 
 static class LZ77 {
 public:
-    static std::vector<std::tuple<int, int, char>> compress(size_t window_size, const char *inputFile);
-    static std::string decompress(std::vector<std::tuple<int, int, char>> compressed);
+    static void compress(size_t search_buffer_size, size_t lookahead_buffer_size, std::ifstream &infile,
+                         std::ofstream &outfile);
+    static void decompress(size_t search_buffer_size, size_t lookahead_buffer_size, std::ifstream &infile,
+                           std::ofstream &outfile);
 } LZ77;
 
-#endif // CSC2525_LZ77_H

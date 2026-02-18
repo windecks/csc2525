@@ -8,4 +8,6 @@ include_directories(.)
 add_executable(csc2525
         lz77.cpp
         lz77.h
-        main.cpp)
+        main.cpp
+        bit_writer.h
+        constants.h)
