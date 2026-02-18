@@ -10,4 +10,5 @@ add_executable(csc2525
         lz77.h
         main.cpp
         bit_writer.h
-        constants.h)
+        constants.h
+        hash_chain.h)
