@@ -10,9 +10,9 @@
 
 namespace {
     uint32_t bits_needed(const uint64_t n) {
-        if (n <= 1)
-            return n;
-        return 64 - __builtin_clzll(n - 1);
+        if (n == 0)
+            return 1;
+        return 64 - __builtin_clzll(n);
     }
 } // namespace
 
@@ -84,8 +84,8 @@ void LZ77::compress(const size_t &search_buffer_size, const size_t &lookahead_bu
 
 void LZ77::decompress(const size_t &search_buffer_size, const size_t &lookahead_buffer_size, std::ifstream &infile,
                       std::ofstream &outfile) {
-    std::vector<char> window;
-    window.reserve(search_buffer_size);
+    std::vector<char> window(search_buffer_size);
+    size_t write_pos = 0;
 
     const size_t bits_for_offset = bits_needed(search_buffer_size);
     const size_t bits_for_length = bits_needed(lookahead_buffer_size);
@@ -103,19 +103,16 @@ void LZ77::decompress(const size_t &search_buffer_size, const size_t &lookahead_
         char next_char = static_cast<char>(next_char_val);
 
         if (offset > 0) {
-            size_t start_index = window.size() - offset;
             for (size_t i = 0; i < length; ++i) {
-                char c = window[start_index + i];
-                outfile.write(&c, sizeof(char));
-                window.push_back(c);
+                size_t read_idx = (write_pos - offset) % search_buffer_size;
+                char c = window[read_idx];
+                outfile.put(c);
+                window[write_pos % search_buffer_size] = c;
+                write_pos++;
             }
         }
-        window.push_back(next_char);
-        outfile.write(&next_char, sizeof(char));
-
-        // Maintain the search buffer size
-        if (window.size() > search_buffer_size) {
-            window.erase(window.begin(), window.begin() + (window.size() - search_buffer_size));
-        }
+        window[write_pos % search_buffer_size] = next_char;
+        write_pos++;
+        outfile.put(next_char);
     }
 }
