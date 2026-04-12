@@ -13,7 +13,9 @@ class HashChain {
     size_t search_buffer_size;
 
     static uint32_t hash3(const char *p) {
-        return (static_cast<uint8_t>(p[0]) << 16) | (static_cast<uint8_t>(p[1]) << 8) | static_cast<uint8_t>(p[2]);
+        uint32_t x = 0;
+        std::memcpy(&x, p, 3);
+        return x;
     }
 
 public:

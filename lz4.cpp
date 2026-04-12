@@ -1,5 +1,6 @@
 #include "lz4.h"
 #include <array>
+#include <bit>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -21,24 +22,20 @@ namespace {
     }
 
     void write_len(size_t len, std::ofstream &outfile) {
-        constexpr uint8_t max_len = std::numeric_limits<uint8_t>::max();
-        while (len >= max_len) {
-            outfile.put(static_cast<char>(max_len));
-            len -= max_len;
-        }
-        outfile.put(static_cast<char>(len));
+        do {
+            outfile.put(static_cast<char>((len & ((1 << 7) - 1)) | (((len >> 7) > 0) << 7)));
+        } while (len >>= 7);
     }
 
     uint32_t read_len(std::ifstream &infile) {
         uint32_t len = 0;
-        uint8_t byte;
-
+        uint8_t byte, shift = 0;
         do {
             if (!infile.get(reinterpret_cast<char &>(byte)))
                 break;
-            len += byte;
-        } while (byte == 255);
-
+            len |= (byte & ((1 << 7) - 1)) << shift;
+            shift += 7;
+        } while (byte & (1 << 7));
         return len;
     }
 
@@ -106,10 +103,31 @@ void LZ4::compress(const std::string &input_file, const std::string &output_file
             && std::memcmp(&data[match_pos], &data[prev_match_pos], 4) == 0) {
 
             size_t match_len = 4;
+#ifdef BTYTE_BY_BYTE
             while (match_pos + match_len < data_len &&
                    data[match_pos + match_len] == data[prev_match_pos + match_len]) {
                 match_len++;
             }
+#else
+            while (match_pos + match_len + 8 <= data_len) {
+                uint64_t curr, prev;
+                memcpy(&curr, data + match_pos + match_len, 8);
+                memcpy(&prev, data + prev_match_pos + match_len, 8);
+                if (curr == prev) {
+                    match_len += 8;
+                } else {
+                    int difference_in;
+                    if constexpr (std::endian::native == std::endian::little) {
+                        difference_in = __builtin_ctzll(curr ^ prev) >> 3;
+                    } else {
+                        difference_in = __builtin_clzll(curr ^ prev) >> 3;
+                    }
+                    match_len += difference_in;
+                    if (!difference_in)
+                        break;
+                }
+            }
+#endif
 
             write_literals(literal_pos, match_pos - literal_pos, match_len, data, outfile);
             write_match(match_pos, prev_match_pos, match_len, outfile);
