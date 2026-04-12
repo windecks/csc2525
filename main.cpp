@@ -4,6 +4,7 @@
 #include <iostream>
 #include "bit_reader.h"
 #include "constants.h"
+#include "lz4.h"
 
 namespace {
     uint32_t bits_needed(const uint64_t n) {
@@ -52,26 +53,34 @@ void open_outfile_or_exit(std::ofstream &file, const char *filename) {
 
 // Format: ./lz77 original compressed
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        std::cerr << "Usage: " << argv[0] << " infile outfile" << std::endl;
+    if (argc != 5) {
+        std::cerr << "Usage: " << argv[0] << "mode (lz77/lz4) infile compressed outfile" << std::endl;
         return 1;
     }
-    std::ifstream infile;
-    open_infile_or_exit(infile, argv[1]);
-    std::ofstream outfile;
-    open_outfile_or_exit(outfile, argv[2]);
 
-    LZ77::compress(csc2525::SEARCH_BUFFER_SIZE, csc2525::LOOKAHEAD_BUFFER_SIZE, infile, outfile);
-    infile.close();
-    outfile.close();
+    if (memcmp(argv[1], "lz4", strlen("lz4")) == 0) {
+        LZ4::compress(argv[2], argv[3]);
+        LZ4::decompress(argv[3], argv[4]);
+    } else if (memcmp(argv[1], "lz77", strlen("lz77")) == 0) {
+        std::ifstream infile;
+        open_infile_or_exit(infile, argv[2]);
+        std::ofstream outfile;
+        open_outfile_or_exit(outfile, argv[3]);
 
-    print_compressed(argv[2], csc2525::SEARCH_BUFFER_SIZE, csc2525::LOOKAHEAD_BUFFER_SIZE);
+        LZ77::compress(csc2525::SEARCH_BUFFER_SIZE, csc2525::LOOKAHEAD_BUFFER_SIZE, infile, outfile);
+        infile.close();
+        outfile.close();
 
-    open_infile_or_exit(infile, argv[2]);
-    open_outfile_or_exit(outfile, "decompressed.txt");
+        open_infile_or_exit(infile, argv[3]);
+        open_outfile_or_exit(outfile, argv[4]);
 
-    LZ77::decompress(csc2525::SEARCH_BUFFER_SIZE, csc2525::LOOKAHEAD_BUFFER_SIZE, infile, outfile);
-    infile.close();
-    outfile.close();
+        LZ77::decompress(csc2525::SEARCH_BUFFER_SIZE, csc2525::LOOKAHEAD_BUFFER_SIZE, infile, outfile);
+        infile.close();
+        outfile.close();
+    } else {
+        std::cerr << "mode has to be wither lz77 or lz4" << std::endl;
+        return 1;
+    }
+
     return 0;
 }
