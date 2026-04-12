@@ -54,10 +54,9 @@ void open_outfile_or_exit(std::ofstream &file, const char *filename) {
     }
 }
 
-// Format: ./lz77 original compressed
 int main(int argc, char *argv[]) {
     if (argc != 5) {
-        std::cerr << "Usage: " << argv[0] << "mode (lz77/lz4) infile compressed outfile" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " [lz77/lz4] infile compressed outfile" << std::endl;
         return 1;
     }
 
