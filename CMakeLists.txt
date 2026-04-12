@@ -11,4 +11,7 @@ add_executable(csc2525
         main.cpp
         bit_writer.h
         constants.h
-        hash_chain.h)
+        hash_chain.h
+        lz4.cpp
+        lz4.h
+        mapped_file.h)
