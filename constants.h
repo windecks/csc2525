@@ -10,6 +10,6 @@ namespace csc2525 {
 
     constexpr size_t MIN_MATCH_LENGTH = 1; // Minimum match length to consider for compression
 
-    constexpr size_t SEARCH_BUFFER_SIZE = 32 * KB;  // 32KB search window
-    constexpr size_t LOOKAHEAD_BUFFER_SIZE = 258;   // Max match length
+    constexpr size_t SEARCH_BUFFER_SIZE = 32 * KB; // 32KB search window
+    constexpr size_t LOOKAHEAD_BUFFER_SIZE = 258; // Max match length
 } // namespace csc2525

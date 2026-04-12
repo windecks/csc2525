@@ -1,8 +1,9 @@
 #include "lz4.h"
-#include "mapped_file.h"
 #include <array>
+#include <cstring>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <unistd.h>
 #include <vector>
 #include "mapped_file.h"

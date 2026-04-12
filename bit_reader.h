@@ -18,12 +18,12 @@ struct BitReader {
     int bit_count;
 
     BitReader(std::ifstream &f) :
-        file(f), buffer(csc2525::BIT_WRITER_BUFFER_SIZE), bit_accumulator(0),
-        current_pos(0), bytes_in_buffer(0), bit_count(0) {
+        file(f), buffer(csc2525::BIT_WRITER_BUFFER_SIZE), bit_accumulator(0), current_pos(0), bytes_in_buffer(0),
+        bit_count(0) {
         refill_buffer();
     }
 
-    bool read_bits(uint32_t &out, const int& nbits) {
+    bool read_bits(uint32_t &out, const int &nbits) {
         if (nbits <= 0 || nbits > 32) {
             throw std::invalid_argument("nbits must be between 1 and 32");
         }

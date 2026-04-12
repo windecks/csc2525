@@ -1,7 +1,9 @@
 #include "lz77.h"
 
+#include <cstring>
 #include <fstream>
 #include <iostream>
+
 #include "bit_reader.h"
 #include "constants.h"
 #include "lz4.h"
@@ -12,7 +14,7 @@ namespace {
             return n;
         return 64 - __builtin_clzll(n - 1);
     }
-}
+} // namespace
 
 void print_compressed(const char *filename, size_t search_buffer_size, size_t lookahead_buffer_size) {
     std::ifstream infile(filename, std::ios::binary);
@@ -28,10 +30,11 @@ void print_compressed(const char *filename, size_t search_buffer_size, size_t lo
     uint32_t offset, length, next_char;
     std::cout << "Compressed data (offset, length, next_char):" << std::endl;
     while (bit_reader.read_bits(offset, bits_for_offset)) {
-        if (!bit_reader.read_bits(length, bits_for_length)) break;
-        if (!bit_reader.read_bits(next_char, 8)) break;
-        std::cout << "(" << offset << ", " << length << ", '" << static_cast<char>(next_char) << "')"
-                  << std::endl;
+        if (!bit_reader.read_bits(length, bits_for_length))
+            break;
+        if (!bit_reader.read_bits(next_char, 8))
+            break;
+        std::cout << "(" << offset << ", " << length << ", '" << static_cast<char>(next_char) << "')" << std::endl;
     }
 }
 

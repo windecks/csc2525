@@ -16,7 +16,7 @@ namespace {
     }
 } // namespace
 
-void LZ77::compress(const size_t& search_buffer_size, const size_t& lookahead_buffer_size, std::ifstream &infile,
+void LZ77::compress(const size_t &search_buffer_size, const size_t &lookahead_buffer_size, std::ifstream &infile,
                     std::ofstream &outfile) {
     size_t total_size = search_buffer_size + lookahead_buffer_size;
     std::vector<char> buffer(total_size);
@@ -41,8 +41,8 @@ void LZ77::compress(const size_t& search_buffer_size, const size_t& lookahead_bu
         // only use hash lookup if we have at enough bytes to look at
         if (buffer_cursor + csc2525::MIN_MATCH_LENGTH <= bytes_in_buffer &&
             max_lookahead >= csc2525::MIN_MATCH_LENGTH) {
-            auto [off, len] = hash_chain.find_longest_match(
-                buffer.data(), buffer_start_abs, absolute_pos, search_start_abs, max_lookahead);
+            auto [off, len] = hash_chain.find_longest_match(buffer.data(), buffer_start_abs, absolute_pos,
+                                                            search_start_abs, max_lookahead);
             offset = off;
             length = len;
         }
@@ -82,7 +82,7 @@ void LZ77::compress(const size_t& search_buffer_size, const size_t& lookahead_bu
     }
 }
 
-void LZ77::decompress(const size_t& search_buffer_size, const size_t& lookahead_buffer_size, std::ifstream &infile,
+void LZ77::decompress(const size_t &search_buffer_size, const size_t &lookahead_buffer_size, std::ifstream &infile,
                       std::ofstream &outfile) {
     std::vector<char> window;
     window.reserve(search_buffer_size);

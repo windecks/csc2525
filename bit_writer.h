@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <stdexcept>
 #include <cstdint>
+#include <stdexcept>
 #include <vector>
 #include "constants.h"
 
@@ -19,7 +19,7 @@ struct BitWriter {
         file(f), buffer(csc2525::BIT_WRITER_BUFFER_SIZE), bit_accumulator(0), current_pos(0), bit_count(0) {}
 
     ~BitWriter() { flush_bits(); }
-    void write_bits(const uint32_t& bits, const int& nbits) {
+    void write_bits(const uint32_t &bits, const int &nbits) {
         if (nbits <= 0 || nbits > 32) {
             throw std::invalid_argument("nbits must be between 1 and 32");
         }
