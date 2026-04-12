@@ -5,6 +5,8 @@
 #include <iostream>
 #include <unistd.h>
 #include <vector>
+#include "mapped_file.h"
+#include "rotating_window.h"
 
 namespace {
     constexpr size_t HASH_SIZE = 1 << 16;
@@ -24,6 +26,19 @@ namespace {
             len -= max_len;
         }
         outfile.put(static_cast<char>(len));
+    }
+
+    uint32_t read_len(std::ifstream &infile) {
+        uint32_t len = 0;
+        uint8_t byte;
+
+        do {
+            if (!infile.get(reinterpret_cast<char &>(byte)))
+                break;
+            len += byte;
+        } while (byte == 255);
+
+        return len;
     }
 
     void write_literals(const uint32_t literal_pos, const uint32_t literal_len, const uint32_t match_len,
@@ -109,4 +124,56 @@ void LZ4::compress(const std::string &input_file, const std::string &output_file
 }
 
 void LZ4::decompress(const std::string &input_file, const std::string &output_file) {
+    std::ifstream infile(input_file, std::ios::binary);
+    if (!infile) {
+        std::cerr << "Error opening input file: " << input_file << std::endl;
+        return;
+    }
+
+    std::ofstream outfile(output_file, std::ios::binary);
+    if (!outfile) {
+        std::cerr << "Error opening output file: " << output_file << std::endl;
+        return;
+    }
+
+    constexpr size_t BUF_SIZE = MAX_OFFSET / 2, N_BUF = 3;
+    RotatingWindow<N_BUF, BUF_SIZE> window{};
+
+    char token_char;
+    while (infile.get(token_char)) {
+        const auto token = static_cast<uint8_t>(token_char);
+        uint32_t literal_len = token >> 4;
+        uint32_t match_len = (token & 0x0F) + 4;
+
+        if (literal_len == 15)
+            literal_len += read_len(infile);
+
+        while (literal_len) {
+            auto [loc, space] = window.write_at();
+            const auto read_bytes = std::min(space, literal_len);
+            infile.read(loc, read_bytes);
+            outfile.write(loc, read_bytes);
+            literal_len -= read_bytes;
+            window.mark_written(read_bytes);
+        }
+
+        uint8_t b1, b2;
+        if (!infile.get(reinterpret_cast<char &>(b1)) || !infile.get(reinterpret_cast<char &>(b2)))
+            break;
+
+        uint16_t offset = b1 | (static_cast<uint16_t>(b2) << 8);
+
+        if (match_len == 15 + 4)
+            match_len += read_len(infile);
+
+        while (match_len) {
+            const auto [read_pos, max_read_len] = window.read_from(offset);
+            auto [write_pos, max_write_len] = window.write_at();
+            const auto len = std::min(std::min(max_read_len, max_write_len), match_len);
+            outfile.write(read_pos, len);
+            memcpy(write_pos, read_pos, len);
+            window.mark_written(len);
+            match_len -= len;
+        }
+    }
 }

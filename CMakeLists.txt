@@ -14,4 +14,5 @@ add_executable(csc2525
         hash_chain.h
         lz4.cpp
         lz4.h
-        mapped_file.h)
+        mapped_file.h
+        rotating_window.h)
