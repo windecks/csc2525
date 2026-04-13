@@ -1,7 +1,6 @@
 #include "lz4.h"
 #include <array>
 #include <bit>
-#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -27,13 +26,11 @@ namespace {
         } while (len >>= 7);
     }
 
-    uint32_t read_len(std::ifstream &infile) {
+    uint32_t read_len(const char *&loc) {
         uint32_t len = 0;
         uint8_t byte, shift = 0;
         do {
-            if (!infile.get(reinterpret_cast<char &>(byte)))
-                break;
-            len |= (byte & ((1 << 7) - 1)) << shift;
+            len |= ((byte = *(loc++)) & ((1 << 7) - 1)) << shift;
             shift += 7;
         } while (byte & (1 << 7));
         return len;
@@ -64,7 +61,7 @@ namespace {
 } // namespace
 
 void LZ4::compress(const std::string &input_file, const std::string &output_file) {
-    const MappedFile file(input_file);
+    const MappedFile<mode::read> file(input_file);
     if (!file.is_valid())
         return;
 
@@ -80,6 +77,7 @@ void LZ4::compress(const std::string &input_file, const std::string &output_file
         return;
     }
 
+    write_len(data_len, outfile);
     std::vector<uint32_t> hash_table(HASH_SIZE, ~0);
 
     size_t literal_pos = 0;
@@ -104,7 +102,7 @@ void LZ4::compress(const std::string &input_file, const std::string &output_file
 
             size_t match_len = 4;
 #ifdef BTYTE_BY_BYTE
-            while (match_pos + match_len < data_len &&
+            while (match_pos + match_len + 5 < data_len &&
                    data[match_pos + match_len] == data[prev_match_pos + match_len]) {
                 match_len++;
             }
@@ -143,56 +141,52 @@ void LZ4::compress(const std::string &input_file, const std::string &output_file
 }
 
 void LZ4::decompress(const std::string &input_file, const std::string &output_file) {
-    std::ifstream infile(input_file, std::ios::binary);
-    if (!infile) {
-        std::cerr << "Error opening input file: " << input_file << std::endl;
+    const MappedFile<mode::read> input(input_file);
+    if (!input.is_valid())
         return;
-    }
 
-    std::ofstream outfile(output_file, std::ios::binary);
-    if (!outfile) {
-        std::cerr << "Error opening output file: " << output_file << std::endl;
+    const size_t input_len = input.size();
+    if (input_len == 0)
         return;
-    }
 
-    constexpr size_t BUF_SIZE = MAX_OFFSET / 2, N_BUF = 3;
-    RotatingWindow<N_BUF, BUF_SIZE> window{};
+    const char *input_data = input.data(), *input_pos = input_data;
 
-    char token_char;
-    while (infile.get(token_char)) {
-        const auto token = static_cast<uint8_t>(token_char);
+    MappedFile<mode::write> output(output_file, read_len(input_pos));
+    if (!output.is_valid())
+        return;
+
+    char *output_data = output.data(), *output_pos = output_data;
+
+    while (input_pos < input_data + input_len) {
+        const auto token = static_cast<uint8_t>(*(input_pos++));
         uint32_t literal_len = token >> 4;
-        uint32_t match_len = (token & 0x0F) + 4;
 
         if (literal_len == 15)
-            literal_len += read_len(infile);
+            literal_len += read_len(input_pos);
 
-        while (literal_len) {
-            auto [loc, space] = window.write_at();
-            const auto read_bytes = std::min(space, literal_len);
-            infile.read(loc, read_bytes);
-            outfile.write(loc, read_bytes);
-            literal_len -= read_bytes;
-            window.mark_written(read_bytes);
-        }
+        memcpy(output_pos, input_pos, literal_len);
+        output_pos += literal_len;
+        input_pos += literal_len;
 
-        uint8_t b1, b2;
-        if (!infile.get(reinterpret_cast<char &>(b1)) || !infile.get(reinterpret_cast<char &>(b2)))
+        if (input_pos >= input_data + input_len)
             break;
 
-        uint16_t offset = b1 | (static_cast<uint16_t>(b2) << 8);
 
-        if (match_len == 15 + 4)
-            match_len += read_len(infile);
+        const uint16_t offset =
+                static_cast<uint8_t>(input_pos[0]) | (static_cast<uint16_t>(static_cast<uint8_t>(input_pos[1])) << 8);
+        input_pos += 2;
 
+        uint32_t match_len = (token & 0x0F);
+        if (match_len == 15)
+            match_len += read_len(input_pos);
+        match_len += 4; // match length is always at least 4
+
+        const auto match_from = output_pos - offset;
         while (match_len) {
-            const auto [read_pos, max_read_len] = window.read_from(offset);
-            auto [write_pos, max_write_len] = window.write_at();
-            const auto len = std::min(std::min(max_read_len, max_write_len), match_len);
-            outfile.write(read_pos, len);
-            memcpy(write_pos, read_pos, len);
-            window.mark_written(len);
-            match_len -= len;
+            const auto match = std::min(match_len, static_cast<uint32_t>(output_pos - match_from));
+            memcpy(output_pos, match_from, match);
+            output_pos += match;
+            match_len -= match;
         }
     }
 }
