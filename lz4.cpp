@@ -1,6 +1,7 @@
 #include "lz4.h"
 #include <array>
 #include <bit>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <limits>
