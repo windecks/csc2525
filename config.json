@@ -1,0 +1,20 @@
+{
+    "datasets": [
+        "datasets/silesia/dickens",
+        "datasets/silesia/mozilla",
+        "datasets/silesia/mr",
+        "datasets/silesia/nci",
+        "datasets/silesia/ooffice",
+        "datasets/silesia/osdb",
+        "datasets/silesia/reymont",
+        "datasets/silesia/samba",
+        "datasets/silesia/sao",
+        "datasets/silesia/webster",
+        "datasets/silesia/xml",
+        "datasets/silesia/x-ray"
+    ],
+    "lz77_configs": [
+        {"search_buffer": 4096, "lookahead_buffer": 256},
+        {"search_buffer": 32768, "lookahead_buffer": 256}
+    ]
+}

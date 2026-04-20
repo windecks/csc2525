@@ -16,4 +16,6 @@ add_executable(csc2525
         lz4.cpp
         lz4.h
         mapped_file.h
-        rotating_window.h)
+        rotating_window.h
+        compressor.h
+        benchmarker.h)

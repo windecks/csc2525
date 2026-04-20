@@ -3,10 +3,12 @@
 #include <cstring>
 #include <deque>
 #include <fstream>
+#include <iostream>
 #include <vector>
 #include "bit_reader.h"
 #include "bit_writer.h"
 #include "hash_chain.h"
+#include "constants.h"
 
 namespace {
     uint32_t bits_needed(const uint64_t n) {
@@ -16,8 +18,18 @@ namespace {
     }
 } // namespace
 
-void LZ77::compress(const size_t &search_buffer_size, const size_t &lookahead_buffer_size, std::ifstream &infile,
-                    std::ofstream &outfile) {
+void LZ77::compress(const std::string &input_file, const std::string &output_file) {
+    std::ifstream infile(input_file, std::ios::binary);
+    if (!infile) {
+        std::cerr << "Error opening input file: " << input_file << std::endl;
+        return;
+    }
+    std::ofstream outfile(output_file, std::ios::binary);
+    if (!outfile) {
+        std::cerr << "Error opening output file: " << output_file << std::endl;
+        return;
+    }
+
     size_t total_size = search_buffer_size + lookahead_buffer_size;
     std::vector<char> buffer(total_size);
     infile.read(buffer.data(), total_size);
@@ -82,8 +94,18 @@ void LZ77::compress(const size_t &search_buffer_size, const size_t &lookahead_bu
     }
 }
 
-void LZ77::decompress(const size_t &search_buffer_size, const size_t &lookahead_buffer_size, std::ifstream &infile,
-                      std::ofstream &outfile) {
+void LZ77::decompress(const std::string &input_file, const std::string &output_file) {
+    std::ifstream infile(input_file, std::ios::binary);
+    if (!infile) {
+        std::cerr << "Error opening input file: " << input_file << std::endl;
+        return;
+    }
+    std::ofstream outfile(output_file, std::ios::binary);
+    if (!outfile) {
+        std::cerr << "Error opening output file: " << output_file << std::endl;
+        return;
+    }
+
     std::vector<char> window(search_buffer_size);
     size_t write_pos = 0;
 
