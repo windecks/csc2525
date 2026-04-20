@@ -12,7 +12,7 @@ template<mode m>
 class MappedFile {
 public:
     explicit MappedFile(const std::string &path, const off_t size = 0) {
-        fd_ = open(path.c_str(), m == mode::read ? O_RDONLY : O_RDWR | O_CREAT | O_TRUNC);
+        fd_ = open(path.c_str(), m == mode::read ? O_RDONLY : O_RDWR | O_CREAT | O_TRUNC, 0666);
         if (fd_ == -1) {
             perror(("Error opening file: " + path).c_str());
             return;
