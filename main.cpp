@@ -55,6 +55,8 @@ int main(int argc, char *argv[]) {
             cfg.good_enough_multiplier = lz77_cfg["good_enough_multiplier"];
         if (lz77_cfg.contains("outlier_k"))
             cfg.outlier_k = lz77_cfg["outlier_k"];
+        if (lz77_cfg.contains("lazy_parsing"))
+            cfg.lazy_parsing = lz77_cfg["lazy_parsing"];
 
         LZ77 lz77(cfg);
         std::string name =

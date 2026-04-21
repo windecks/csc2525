@@ -53,7 +53,7 @@ void LZ77::compress(const std::string &input_file, const std::string &output_fil
     size_t match_count = 1;
 
     while (buffer_cursor < bytes_in_buffer) {
-        const size_t max_lookahead = std::min(lookahead_buffer_size, bytes_in_buffer - buffer_cursor - 1);
+        const size_t max_lookahead = std::min(lookahead_buffer_size, bytes_in_buffer - buffer_cursor);
         const size_t search_start_abs = (absolute_pos < search_buffer_size) ? 0 : absolute_pos - search_buffer_size;
 
         size_t offset = 0, length = 0;
@@ -68,6 +68,18 @@ void LZ77::compress(const std::string &input_file, const std::string &output_fil
             offset = off;
             length = len;
 
+            if (config.lazy_parsing && length >= csc2525::MIN_MATCH_LENGTH && length < max_lookahead) {
+                const size_t next_max_lookahead = std::min(lookahead_buffer_size, bytes_in_buffer - buffer_cursor - 1);
+                if (next_max_lookahead >= csc2525::MIN_MATCH_LENGTH) {
+                    auto [next_off, next_len] =
+                            hash_chain.find_good_enough_match(buffer.data(), buffer_start_abs, absolute_pos + 1,
+                                                              search_start_abs, next_max_lookahead, good_enough_length);
+                    if (next_len > length) {
+                        length = 0; // Emit literal, match at next pos
+                    }
+                }
+            }
+
             if (length >= csc2525::MIN_MATCH_LENGTH) {
                 const double diff = static_cast<double>(length) - ema_mean;
                 if (match_count++ < 20 || std::abs(diff) <= config.outlier_k * ema_mad) {
@@ -77,19 +89,32 @@ void LZ77::compress(const std::string &input_file, const std::string &output_fil
             }
         }
 
-        // write compressed tuple
-        const char next_char = buffer[buffer_cursor + length];
-        bit_writer.write_bits(offset, bits_for_offset);
-        bit_writer.write_bits(length, bits_for_length);
-        bit_writer.write_bits(static_cast<unsigned char>(next_char), 8);
+        if (length >= csc2525::MIN_MATCH_LENGTH) {
+            // Write Match (LZSS Flag 1)
+            bit_writer.write_bits(1, 1);
+            bit_writer.write_bits(offset, bits_for_offset);
+            bit_writer.write_bits(length, bits_for_length);
 
-        // Insert positions into hash chain
-        for (size_t i = 0; i <= length && buffer_cursor + i + csc2525::MIN_MATCH_LENGTH <= bytes_in_buffer; ++i) {
-            hash_chain.insert(buffer.data() + buffer_cursor + i, absolute_pos + i);
+            // Insert positions into hash chain
+            for (size_t i = 0; i < length && buffer_cursor + i + csc2525::MIN_MATCH_LENGTH <= bytes_in_buffer; ++i) {
+                hash_chain.insert(buffer.data() + buffer_cursor + i, absolute_pos + i);
+            }
+
+            buffer_cursor += length;
+            absolute_pos += length;
+        } else {
+            // Write Literal (LZSS Flag 0)
+            bit_writer.write_bits(0, 1);
+            bit_writer.write_bits(static_cast<unsigned char>(buffer[buffer_cursor]), 8);
+
+            // Insert position into hash chain
+            if (buffer_cursor + csc2525::MIN_MATCH_LENGTH <= bytes_in_buffer) {
+                hash_chain.insert(buffer.data() + buffer_cursor, absolute_pos);
+            }
+
+            buffer_cursor += 1;
+            absolute_pos += 1;
         }
-
-        buffer_cursor += (length + 1);
-        absolute_pos += (length + 1);
 
         // if we are near the end of the buffer, shift and read more data
         if (buffer_cursor > search_buffer_size) {
@@ -131,28 +156,34 @@ void LZ77::decompress(const std::string &input_file, const std::string &output_f
     const size_t bits_for_length = bits_needed(lookahead_buffer_size);
     BitReader bit_reader(infile);
 
-    uint32_t offset_val, length_val, next_char_val;
-    while (bit_reader.read_bits(offset_val, bits_for_offset)) {
-        if (!bit_reader.read_bits(length_val, bits_for_length))
-            break;
-        if (!bit_reader.read_bits(next_char_val, 8))
-            break;
+    uint32_t flag, offset_val, length_val, next_char_val;
+    while (bit_reader.read_bits(flag, 1)) {
+        if (flag == 1) { // Match
+            if (!bit_reader.read_bits(offset_val, bits_for_offset))
+                break;
+            if (!bit_reader.read_bits(length_val, bits_for_length))
+                break;
 
-        const size_t offset = offset_val;
-        const size_t length = length_val;
-        char next_char = static_cast<char>(next_char_val);
+            const size_t offset = offset_val;
+            const size_t length = length_val;
 
-        if (offset > 0) {
-            for (size_t i = 0; i < length; ++i) {
-                size_t read_idx = (write_pos - offset) % search_buffer_size;
-                char c = window[read_idx];
-                outfile.put(c);
-                window[write_pos % search_buffer_size] = c;
-                write_pos++;
+            if (offset > 0) {
+                for (size_t i = 0; i < length; ++i) {
+                    size_t read_idx = (write_pos - offset) % search_buffer_size;
+                    char c = window[read_idx];
+                    outfile.put(c);
+                    window[write_pos % search_buffer_size] = c;
+                    write_pos++;
+                }
             }
+        } else { // Literal
+            if (!bit_reader.read_bits(next_char_val, 8))
+                break;
+
+            char next_char = static_cast<char>(next_char_val);
+            window[write_pos % search_buffer_size] = next_char;
+            write_pos++;
+            outfile.put(next_char);
         }
-        window[write_pos % search_buffer_size] = next_char;
-        write_pos++;
-        outfile.put(next_char);
     }
 }

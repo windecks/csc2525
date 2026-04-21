@@ -11,6 +11,7 @@ struct LZ77Config {
     double decay_rate = 0.05;
     double good_enough_multiplier = 1.5;
     double outlier_k = 2.0;
+    bool lazy_parsing = true;
 };
 
 class LZ77 : public Compressor {

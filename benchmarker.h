@@ -1,13 +1,12 @@
 #pragma once
 
 #include <chrono>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <iomanip>
 #include <string>
 #include <vector>
-#include <cstring>
 #include "compressor.h"
 #include "mapped_file.h"
 
@@ -65,8 +64,8 @@ public:
             const double comp_speed = (orig_size / 1024.0 / 1024.0) / (comp_time / 1000.0);
             const double decomp_speed = (orig_size / 1024.0 / 1024.0) / (decomp_time / 1000.0);
 
-            std::cout << (passed ? "[PASS] " : "[FAIL] ")
-                      << std::fixed << std::setprecision(2) << "Ratio: " << ratio << "x | "
+            std::cout << (passed ? "[PASS] " : "[FAIL] ") << std::fixed << std::setprecision(2) << "Ratio: " << ratio
+                      << "x | "
                       << "Comp: " << comp_speed << " MB/s | "
                       << "Decomp: " << decomp_speed << " MB/s\n";
 
