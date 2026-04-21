@@ -12,6 +12,11 @@ struct LZ77Config {
     double good_enough_multiplier = 1.5;
     double outlier_k = 2.0;
     bool lazy_parsing = true;
+    // When true, use EMA/MAD-based adaptive "good enough" threshold.
+    // When false, the compressor will not use the adaptive heuristic and
+    // will use a conservative good_enough_length (max lookahead) so the
+    // hash chain is searched until a long match is found or the chain is exhausted.
+    bool use_adaptive_heuristic = true;
 };
 
 class LZ77 : public Compressor {

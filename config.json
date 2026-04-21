@@ -1,46 +1,79 @@
 {
-    "datasets": [
-        "datasets/silesia/dickens",
-        "datasets/silesia/mozilla",
-        "datasets/silesia/mr",
-        "datasets/silesia/nci",
-        "datasets/silesia/ooffice",
-        "datasets/silesia/osdb",
-        "datasets/silesia/reymont",
-        "datasets/silesia/samba",
-        "datasets/silesia/sao",
-        "datasets/silesia/webster",
-        "datasets/silesia/xml",
-        "datasets/silesia/x-ray",
-        "datasets/enwik8"
-    ],
-    "lz77_configs": [
-        {
-            "search_buffer": 131072,
-            "lookahead_buffer": 256,
-            "max_chain_attempts": 100,
-            "decay_rate": 0.1,
-            "good_enough_multiplier": 5,
-            "outlier_k": 8.0,
-            "lazy_parsing": false
-        },
-        {
-            "search_buffer": 131072,
-            "lookahead_buffer": 256,
-            "max_chain_attempts": 100,
-            "decay_rate": 0.1,
-            "good_enough_multiplier": 5,
-            "outlier_k": 8.0,
-            "lazy_parsing": true
-        },
-        {
-            "search_buffer": 32768,
-            "lookahead_buffer": 256,
-            "max_chain_attempts": 200,
-            "decay_rate": 0.05,
-            "good_enough_multiplier": 3,
-            "outlier_k": 5.0,
-            "lazy_parsing": true
-        }
-    ]
+  "datasets": [
+    "datasets/silesia/dickens",
+    "datasets/silesia/mozilla",
+    "datasets/silesia/mr",
+    "datasets/silesia/nci",
+    "datasets/silesia/ooffice",
+    "datasets/silesia/osdb",
+    "datasets/silesia/reymont",
+    "datasets/silesia/samba",
+    "datasets/silesia/sao",
+    "datasets/silesia/webster",
+    "datasets/silesia/xml",
+    "datasets/silesia/x-ray",
+    "datasets/enwik8"
+  ],
+  "lz77_configs": [
+    {
+      "search_buffer": 131072,
+      "lookahead_buffer": 256,
+      "max_chain_attempts": 500,
+      "decay_rate": 0.10,
+      "good_enough_multiplier": 5,
+      "outlier_k": 8.0,
+      "lazy_parsing": true,
+      "use_adaptive_heuristic": true
+    },
+    {
+      "search_buffer": 131072,
+      "lookahead_buffer": 256,
+      "max_chain_attempts": 500,
+      "decay_rate": 0.10,
+      "good_enough_multiplier": 5,
+      "outlier_k": 8.0,
+      "lazy_parsing": true,
+      "use_adaptive_heuristic": false
+    },
+    {
+      "search_buffer": 131072,
+      "lookahead_buffer": 256,
+      "max_chain_attempts": 100,
+      "decay_rate": 0.05,
+      "good_enough_multiplier": 3,
+      "outlier_k": 5.0,
+      "lazy_parsing": false,
+      "use_adaptive_heuristic": true
+    },
+    {
+      "search_buffer": 131072,
+      "lookahead_buffer": 256,
+      "max_chain_attempts": 100,
+      "decay_rate": 0.05,
+      "good_enough_multiplier": 3,
+      "outlier_k": 5.0,
+      "lazy_parsing": false,
+      "use_adaptive_heuristic": false
+    },
+    {
+      "search_buffer": 32768,
+      "lookahead_buffer": 256,
+      "max_chain_attempts": 200,
+      "decay_rate": 0.05,
+      "good_enough_multiplier": 3,
+      "outlier_k": 5.0,
+      "lazy_parsing": true,
+      "use_adaptive_heuristic": true
+    },
+    {
+      "search_buffer": 32768,
+      "lookahead_buffer": 256,
+      "max_chain_attempts": 200,
+      "decay_rate": 0.05,
+      "good_enough_multiplier": 3,
+      "outlier_k": 5.0,
+      "lazy_parsing": true,
+      "use_adaptive_heuristic": false
+    }
+  ]
 }

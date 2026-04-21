@@ -57,10 +57,13 @@ int main(int argc, char *argv[]) {
             cfg.outlier_k = lz77_cfg["outlier_k"];
         if (lz77_cfg.contains("lazy_parsing"))
             cfg.lazy_parsing = lz77_cfg["lazy_parsing"];
+        if (lz77_cfg.contains("use_adaptive_heuristic"))
+            cfg.use_adaptive_heuristic = lz77_cfg["use_adaptive_heuristic"];
 
         LZ77 lz77(cfg);
-        std::string name =
-                "LZ77_s" + std::to_string(cfg.search_buffer_size) + "_l" + std::to_string(cfg.lookahead_buffer_size);
+        std::string name = "LZ77_s" + std::to_string(cfg.search_buffer_size) + "_l" +
+                           std::to_string(cfg.lookahead_buffer_size) +
+                           (cfg.use_adaptive_heuristic ? "_adaptive" : "_nonadaptive");
         benchmarker.run(lz77, name);
     }
 

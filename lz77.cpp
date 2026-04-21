@@ -57,8 +57,18 @@ void LZ77::compress(const std::string &input_file, const std::string &output_fil
         const size_t search_start_abs = (absolute_pos < search_buffer_size) ? 0 : absolute_pos - search_buffer_size;
 
         size_t offset = 0, length = 0;
-        size_t good_enough_length = std::max<size_t>(csc2525::MIN_MATCH_LENGTH,
-                                                     static_cast<size_t>(ema_mean * config.good_enough_multiplier));
+        // Compute the "good enough" length depending on whether the adaptive heuristic is enabled.
+        size_t good_enough_length;
+        if (config.use_adaptive_heuristic) {
+            good_enough_length = std::max<size_t>(csc2525::MIN_MATCH_LENGTH,
+                                                  static_cast<size_t>(ema_mean * config.good_enough_multiplier));
+            if (good_enough_length > max_lookahead)
+                good_enough_length = max_lookahead;
+        } else {
+            // If adaptive heuristic is disabled, set the threshold to the maximum possible
+            // lookahead so we do not early-exit the chain search based on EMA.
+            good_enough_length = max_lookahead;
+        }
 
         // only use hash lookup if we have at enough bytes to look at
         if (buffer_cursor + csc2525::MIN_MATCH_LENGTH <= bytes_in_buffer &&
@@ -80,7 +90,8 @@ void LZ77::compress(const std::string &input_file, const std::string &output_fil
                 }
             }
 
-            if (length >= csc2525::MIN_MATCH_LENGTH) {
+            // Update EMA / MAD only when the adaptive heuristic is enabled.
+            if (config.use_adaptive_heuristic && length >= csc2525::MIN_MATCH_LENGTH) {
                 const double diff = static_cast<double>(length) - ema_mean;
                 if (match_count++ < 20 || std::abs(diff) <= config.outlier_k * ema_mad) {
                     ema_mean += config.decay_rate * diff;
