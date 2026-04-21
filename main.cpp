@@ -10,7 +10,7 @@
 using json = nlohmann::json;
 
 int main(int argc, char *argv[]) {
-    std::string config_path = "config.json";
+    std::string config_path = "./config.json";
     if (argc > 1) {
         config_path = argv[1];
     }
@@ -62,8 +62,9 @@ int main(int argc, char *argv[]) {
         benchmarker.run(lz77, name);
     }
 
-    benchmarker.save_to_csv("benchmark_results.csv");
-    std::cout << "Benchmarking complete. Results saved to benchmark_results.csv" << std::endl;
+    auto csv_path = (config_dir / "benchmark_results.csv").string();
+    benchmarker.save_to_csv(csv_path);
+    std::cout << "Benchmarking complete. Results saved to " << csv_path << std::endl;
 
     return 0;
 }

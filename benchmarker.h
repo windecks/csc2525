@@ -1,11 +1,11 @@
 #pragma once
 
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <vector>
 #include <string>
-#include <filesystem>
+#include <vector>
 #include "compressor.h"
 
 struct BenchmarkResult {
@@ -19,27 +19,35 @@ struct BenchmarkResult {
 
 class Benchmarker {
 public:
-    void add_test(const std::string& dataset_path) {
-        datasets.push_back(dataset_path);
-    }
+    void add_test(const std::string &dataset_path) { datasets.push_back(dataset_path); }
 
-    void run(Compressor& compressor, const std::string& algo_name) {
-        for (const auto& dataset : datasets) {
+    void run(Compressor &compressor, const std::string &algo_name) {
+        std::cout << "\n=== Running " << algo_name << " ===" << std::endl;
+        for (const auto &dataset: datasets) {
+            std::cout << "Benchmarking " << std::filesystem::path(dataset).filename().string() << "... " << std::flush;
             std::string compressed_file = dataset + ".tmp.compressed";
             std::string decompressed_file = dataset + ".tmp.decompressed";
 
             auto start = std::chrono::high_resolution_clock::now();
             compressor.compress(dataset, compressed_file);
             auto end = std::chrono::high_resolution_clock::now();
-            double comp_time = std::chrono::duration<double, std::milli>(end - start).count();
+            const double comp_time = std::chrono::duration<double, std::milli>(end - start).count();
 
             start = std::chrono::high_resolution_clock::now();
             compressor.decompress(compressed_file, decompressed_file);
             end = std::chrono::high_resolution_clock::now();
-            double decomp_time = std::chrono::duration<double, std::milli>(end - start).count();
+            const double decomp_time = std::chrono::duration<double, std::milli>(end - start).count();
 
-            size_t orig_size = std::filesystem::file_size(dataset);
-            size_t comp_size = std::filesystem::file_size(compressed_file);
+            const size_t orig_size = std::filesystem::file_size(dataset);
+            const size_t comp_size = std::filesystem::file_size(compressed_file);
+
+            const double ratio = static_cast<double>(orig_size) / comp_size;
+            const double comp_speed = (orig_size / 1024.0 / 1024.0) / (comp_time / 1000.0);
+            const double decomp_speed = (orig_size / 1024.0 / 1024.0) / (decomp_time / 1000.0);
+
+            std::cout << std::fixed << std::setprecision(2) << "Ratio: " << ratio << "x | "
+                      << "Comp: " << comp_speed << " MB/s | "
+                      << "Decomp: " << decomp_speed << " MB/s\n";
 
             results.push_back({algo_name, dataset, orig_size, comp_size, comp_time, decomp_time});
 
@@ -49,17 +57,18 @@ public:
         }
     }
 
-    void save_to_csv(const std::string& filename) {
+    void save_to_csv(const std::string &filename) const {
         std::ofstream out(filename);
-        out << "Algorithm,Dataset,OriginalSize,CompressedSize,CompressionRatio,CompressionTimeMS,DecompressionTimeMS,CompSpeedMBs,DecompSpeedMBs\n";
-        for (const auto& r : results) {
-            double ratio = static_cast<double>(r.original_size) / r.compressed_size;
-            double comp_speed = (r.original_size / 1024.0 / 1024.0) / (r.compression_time_ms / 1000.0);
-            double decomp_speed = (r.original_size / 1024.0 / 1024.0) / (r.decompression_time_ms / 1000.0);
-            
-            out << r.algorithm << "," << r.dataset << "," << r.original_size << "," << r.compressed_size << ","
-                << ratio << "," << r.compression_time_ms << "," << r.decompression_time_ms << ","
-                << comp_speed << "," << decomp_speed << "\n";
+        out << "Algorithm,Dataset,OriginalSize,CompressedSize,CompressionRatio,CompressionTimeMS,DecompressionTimeMS,"
+               "CompSpeedMBs,DecompSpeedMBs\n";
+        for (const auto &r: results) {
+            const double ratio = static_cast<double>(r.original_size) / r.compressed_size;
+            const double comp_speed = (r.original_size / 1024.0 / 1024.0) / (r.compression_time_ms / 1000.0);
+            const double decomp_speed = (r.original_size / 1024.0 / 1024.0) / (r.decompression_time_ms / 1000.0);
+
+            out << r.algorithm << "," << r.dataset << "," << r.original_size << "," << r.compressed_size << "," << ratio
+                << "," << r.compression_time_ms << "," << r.decompression_time_ms << "," << comp_speed << ","
+                << decomp_speed << "\n";
         }
     }
 
