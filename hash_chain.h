@@ -5,12 +5,14 @@
 #pragma once
 
 #include <deque>
+#include <ranges>
 #include <unordered_map>
 #include "constants.h"
 
 class HashChain {
     std::unordered_map<uint32_t, std::deque<size_t>> chains;
     size_t search_buffer_size;
+    size_t max_chain_attempts;
 
     static uint32_t hash3(const char *p) {
         uint32_t x = 0;
@@ -19,12 +21,17 @@ class HashChain {
     }
 
 public:
-    explicit HashChain(const size_t search_size) : search_buffer_size(search_size) {}
+    explicit HashChain(const size_t search_size, const size_t max_chain) :
+        search_buffer_size(search_size), max_chain_attempts(max_chain) {}
 
     // hash using the relative ptr, insert using the absolute pointertr
     void insert(const char *buffer_ptr, const size_t absolute_pos) {
         const uint32_t h = hash3(buffer_ptr);
-        chains[h].push_back(absolute_pos);
+        auto &chain = chains[h];
+        chain.push_front(absolute_pos);
+        if (chain.size() > max_chain_attempts) {
+            chain.pop_back();
+        }
     }
 
     void evict_old(const size_t current_abs_pos) {
@@ -33,8 +40,8 @@ public:
         const size_t evict_boundary = current_abs_pos - search_buffer_size;
 
         for (auto &[hash, chain]: chains) {
-            while (!chain.empty() && chain.front() < evict_boundary) {
-                chain.pop_front();
+            while (!chain.empty() && chain.back() < evict_boundary) {
+                chain.pop_back();
             }
         }
     }
@@ -45,11 +52,12 @@ public:
      * @param current_abs_pos absolute file position we're looking for matches at
      * @param search_start_abs earliest absolute position to search from
      * @param max_len maximum match length
+     * @param good_enough_length stop exploring matches after finding match atleast this long
      * @return pair of (offset, length) for longest match found, or (0, 0) if no match
      */
-    std::pair<size_t, size_t> find_longest_match(const char *buffer, const size_t buffer_start_abs,
-                                                 const size_t current_abs_pos, const size_t search_start_abs,
-                                                 const size_t max_len) {
+    std::pair<size_t, size_t> find_good_enough_match(const char *buffer, const size_t buffer_start_abs,
+                                                     const size_t current_abs_pos, const size_t search_start_abs,
+                                                     const size_t max_len, const size_t good_enough_length) {
         if (max_len < csc2525::MIN_MATCH_LENGTH) {
             return {0, 0};
         }
@@ -65,8 +73,7 @@ public:
         const auto &chain = it->second;
 
         // search the chain starting from most recent
-        for (auto rit = chain.rbegin(); rit != chain.rend(); ++rit) {
-            const size_t candidate_abs_pos = *rit;
+        for (const size_t candidate_abs_pos: chain) {
             if (candidate_abs_pos < search_start_abs)
                 break;
             if (candidate_abs_pos < buffer_start_abs)
@@ -83,7 +90,7 @@ public:
             if (len > best_len) {
                 best_len = len;
                 best_off = current_abs_pos - candidate_abs_pos;
-                if (best_len == max_len)
+                if (best_len >= good_enough_length || best_len >= max_len)
                     break;
             }
         }
