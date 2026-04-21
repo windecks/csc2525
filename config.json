@@ -11,24 +11,25 @@
         "datasets/silesia/sao",
         "datasets/silesia/webster",
         "datasets/silesia/xml",
-        "datasets/silesia/x-ray"
+        "datasets/silesia/x-ray",
+        "datasets/enwik8"
     ],
     "lz77_configs": [
         {
-            "search_buffer": 4096, 
+            "search_buffer": 131072,
             "lookahead_buffer": 256,
-            "max_chain_attempts": 5,
-            "decay_rate": 0.05,
-            "good_enough_multiplier": 1.5,
-            "outlier_k": 2.0
+            "max_chain_attempts": 100,
+            "decay_rate": 0.1,
+            "good_enough_multiplier": 5,
+            "outlier_k": 8.0
         },
         {
             "search_buffer": 32768, 
             "lookahead_buffer": 256,
-            "max_chain_attempts": 5,
+            "max_chain_attempts": 200,
             "decay_rate": 0.05,
-            "good_enough_multiplier": 1.5,
-            "outlier_k": 2.0
+            "good_enough_multiplier": 3,
+            "outlier_k": 5.0
         }
     ]
 }

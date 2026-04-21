@@ -4,9 +4,12 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <vector>
+#include <cstring>
 #include "compressor.h"
+#include "mapped_file.h"
 
 struct BenchmarkResult {
     std::string algorithm;
@@ -40,12 +43,30 @@ public:
 
             const size_t orig_size = std::filesystem::file_size(dataset);
             const size_t comp_size = std::filesystem::file_size(compressed_file);
+            const size_t decomp_size = std::filesystem::file_size(decompressed_file);
+
+            bool passed = true;
+            if (orig_size != decomp_size) {
+                passed = false;
+            } else {
+                MappedFile<mode::read> orig_map(dataset);
+                MappedFile<mode::read> decomp_map(decompressed_file);
+                if (orig_map.is_valid() && decomp_map.is_valid()) {
+                    if (std::memcmp(orig_map.data(), decomp_map.data(), orig_size) != 0) {
+                        passed = false;
+                    }
+                } else {
+                    std::cerr << " [Map Error] ";
+                    passed = false;
+                }
+            }
 
             const double ratio = static_cast<double>(orig_size) / comp_size;
             const double comp_speed = (orig_size / 1024.0 / 1024.0) / (comp_time / 1000.0);
             const double decomp_speed = (orig_size / 1024.0 / 1024.0) / (decomp_time / 1000.0);
 
-            std::cout << std::fixed << std::setprecision(2) << "Ratio: " << ratio << "x | "
+            std::cout << (passed ? "[PASS] " : "[FAIL] ")
+                      << std::fixed << std::setprecision(2) << "Ratio: " << ratio << "x | "
                       << "Comp: " << comp_speed << " MB/s | "
                       << "Decomp: " << decomp_speed << " MB/s\n";
 

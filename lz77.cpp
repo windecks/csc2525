@@ -101,9 +101,6 @@ void LZ77::compress(const std::string &input_file, const std::string &output_fil
             bytes_in_buffer = remaining_bytes + new_bytes;
             buffer_cursor -= shift_amount;
             buffer_start_abs += shift_amount;
-
-            // cleanup
-            hash_chain.evict_old(absolute_pos);
         }
 
         if (bytes_in_buffer == 0) {
