@@ -11,7 +11,7 @@ enum class mode { read, write };
 template<mode m>
 class MappedFile {
 public:
-    explicit MappedFile(const std::string &path, const off_t size = 0) {
+    explicit MappedFile(const std::string &path, const size_t size = 0) {
         fd_ = open(path.c_str(), m == mode::read ? O_RDONLY : O_RDWR | O_CREAT | O_TRUNC, 0666);
         if (fd_ == -1) {
             perror(("Error opening file: " + path).c_str());
@@ -79,5 +79,5 @@ public:
 private:
     int fd_ = -1;
     void *data_ = nullptr;
-    off_t size_ = 0;
+    size_t size_ = 0;
 };

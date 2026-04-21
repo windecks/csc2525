@@ -27,19 +27,19 @@ namespace {
         } while (len >>= 7);
     }
 
-    uint32_t read_len(const char *&loc) {
-        uint32_t len = 0;
+    size_t read_len(const char *&loc) {
+        size_t len = 0;
         uint8_t byte, shift = 0;
         do {
-            len |= ((byte = *(loc++)) & ((1 << 7) - 1)) << shift;
+            len |= static_cast<size_t>((byte = *(loc++)) & ((1 << 7) - 1)) << shift;
             shift += 7;
         } while (byte & (1 << 7));
         return len;
     }
 
-    void write_literals(const uint32_t literal_pos, const uint32_t literal_len, const uint32_t match_len,
-                        const char *data, std::ofstream &outfile) {
-        const uint8_t token = (std::min(literal_len, 15u) << 4) | std::min(match_len - 4, 15u);
+    void write_literals(const size_t literal_pos, const size_t literal_len, const size_t match_len, const char *data,
+                        std::ofstream &outfile) {
+        const uint8_t token = (std::min(literal_len, 15ul) << 4) | std::min(match_len - 4, 15ul);
         outfile.put(static_cast<const char>(token));
 
         if (literal_len >= 15)
@@ -48,7 +48,7 @@ namespace {
         outfile.write(&data[literal_pos], literal_len);
     }
 
-    void write_match(const uint32_t match_pos, const uint32_t prev_match_pos, const uint32_t match_len,
+    void write_match(const size_t match_pos, const size_t prev_match_pos, const size_t match_len,
                      std::ofstream &outfile) {
         // offset is encoded as a 2-byte little endian integer
         const auto offset = static_cast<uint16_t>(match_pos - prev_match_pos);
@@ -79,7 +79,7 @@ void LZ4::compress(const std::string &input_file, const std::string &output_file
     }
 
     write_len(data_len, outfile);
-    std::vector<uint32_t> hash_table(HASH_SIZE, ~0);
+    std::vector<size_t> hash_table(HASH_SIZE, ~0ul);
 
     size_t literal_pos = 0;
     size_t match_pos = 0;
@@ -94,10 +94,10 @@ void LZ4::compress(const std::string &input_file, const std::string &output_file
             break;
 
         const uint32_t hash = hash4(&data[match_pos]);
-        const uint32_t prev_match_pos = hash_table[hash];
-        hash_table[hash] = static_cast<uint32_t>(match_pos);
+        const size_t prev_match_pos = hash_table[hash];
+        hash_table[hash] = match_pos;
 
-        if (prev_match_pos != ~0 // match position is valid
+        if (prev_match_pos != ~0ul // match position is valid
             && (match_pos - prev_match_pos) < MAX_OFFSET // offset is valid
             && std::memcmp(&data[match_pos], &data[prev_match_pos], 4) == 0) {
 
@@ -122,8 +122,7 @@ void LZ4::compress(const std::string &input_file, const std::string &output_file
                         difference_in = __builtin_clzll(curr ^ prev) >> 3;
                     }
                     match_len += difference_in;
-                    if (!difference_in)
-                        break;
+                    break;
                 }
             }
 #endif
@@ -160,7 +159,7 @@ void LZ4::decompress(const std::string &input_file, const std::string &output_fi
 
     while (input_pos < input_data + input_len) {
         const auto token = static_cast<uint8_t>(*(input_pos++));
-        uint32_t literal_len = token >> 4;
+        size_t literal_len = token >> 4;
 
         if (literal_len == 15)
             literal_len += read_len(input_pos);
@@ -172,19 +171,23 @@ void LZ4::decompress(const std::string &input_file, const std::string &output_fi
         if (input_pos >= input_data + input_len)
             break;
 
-
         const uint16_t offset =
                 static_cast<uint8_t>(input_pos[0]) | (static_cast<uint16_t>(static_cast<uint8_t>(input_pos[1])) << 8);
         input_pos += 2;
 
-        uint32_t match_len = (token & 0x0F);
+        if (offset == 0 || offset > output_pos - output_data) {
+            std::cerr << "Invalid LZ4 offset" << std::endl;
+            break;
+        }
+
+        size_t match_len = (token & 0x0F);
         if (match_len == 15)
             match_len += read_len(input_pos);
         match_len += 4; // match length is always at least 4
 
         const auto match_from = output_pos - offset;
         while (match_len) {
-            const auto match = std::min(match_len, static_cast<uint32_t>(output_pos - match_from));
+            const auto match = std::min(match_len, static_cast<size_t>(output_pos - match_from));
             memcpy(output_pos, match_from, match);
             output_pos += match;
             match_len -= match;
